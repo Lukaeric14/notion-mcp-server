@@ -17,17 +17,64 @@ export async function startServer(args: string[] = process.argv) {
 
   // Parse command line arguments manually (similar to slack-mcp approach)
   function parseArgs() {
-    const args = process.argv.slice(2);
-    let transport = 'stdio'; // default
-    let port = 3000;
-    let authToken: string | undefined;
+    const args = process.argv.slice(2)
+
+    type Transport = 'stdio' | 'http'
+    const isSupportedTransport = (value: string | undefined): value is Transport =>
+      value === 'stdio' || value === 'http'
+
+    const parsePortNumber = (value: string | undefined, source: string): number | undefined => {
+      if (value === undefined) {
+        return undefined
+      }
+
+      const parsed = Number.parseInt(value, 10)
+      if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 65535) {
+        console.warn(`Ignoring ${source} "${value}" because it is not a valid TCP port.`)
+        return undefined
+      }
+
+      return parsed
+    }
+
+    const envPort = parsePortNumber(process.env.PORT, 'PORT environment variable')
+    let port = envPort ?? 3000
+    let portSource: 'env' | 'default' | 'cli' = envPort !== undefined ? 'env' : 'default'
+
+    const envTransportValue = process.env.MCP_TRANSPORT?.toLowerCase()
+    let transport: Transport = 'stdio'
+    let transportSource: 'auto' | 'default' | 'env' | 'cli' = 'default'
+
+    if (isSupportedTransport(envTransportValue)) {
+      transport = envTransportValue
+      transportSource = 'env'
+    } else if (envTransportValue) {
+      console.warn(`Ignoring MCP_TRANSPORT value "${process.env.MCP_TRANSPORT}". Supported transports are 'stdio' or 'http'.`)
+    }
+
+    if (transportSource === 'default' && portSource === 'env') {
+      transport = 'http'
+      transportSource = 'auto'
+    }
+
+    let authToken: string | undefined
 
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--transport' && i + 1 < args.length) {
-        transport = args[i + 1];
+        const cliTransport = args[i + 1]?.toLowerCase()
+        if (isSupportedTransport(cliTransport)) {
+          transport = cliTransport
+          transportSource = 'cli'
+        } else if (cliTransport) {
+          console.warn(`Ignoring unsupported transport "${args[i + 1]}". Supported transports are 'stdio' or 'http'.`)
+        }
         i++; // skip next argument
       } else if (args[i] === '--port' && i + 1 < args.length) {
-        port = parseInt(args[i + 1], 10);
+        const parsedCliPort = parsePortNumber(args[i + 1], '--port option')
+        if (parsedCliPort !== undefined) {
+          port = parsedCliPort
+          portSource = 'cli'
+        }
         i++; // skip next argument
       } else if (args[i] === '--auth-token' && i + 1 < args.length) {
         authToken = args[i + 1];
@@ -60,7 +107,19 @@ Examples:
       // Ignore unrecognized arguments (like command name passed by Docker)
     }
 
-    return { transport: transport.toLowerCase(), port, authToken };
+    if (transportSource === 'auto') {
+      console.log(`Detected PORT environment variable. Defaulting to HTTP transport.`)
+    }
+
+    if (portSource === 'env') {
+      console.log(`Using port ${port} from PORT environment variable.`)
+    }
+
+    if (transportSource === 'env') {
+      console.log(`Using ${transport} transport from MCP_TRANSPORT environment variable.`)
+    }
+
+    return { transport, port, authToken };
   }
 
   const options = parseArgs()
