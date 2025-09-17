@@ -8,7 +8,7 @@ import express from 'express'
 
 import { initProxy, ValidationError } from '../src/init-server'
 
-export async function startServer(args: string[] = process.argv) {
+export async function startServer(argv: string[] = process.argv) {
   const filename = fileURLToPath(import.meta.url)
   const directory = path.dirname(filename)
   const specPath = path.resolve(directory, '../scripts/notion-openapi.json')
@@ -16,8 +16,8 @@ export async function startServer(args: string[] = process.argv) {
   const baseUrl = process.env.BASE_URL ?? undefined
 
   // Parse command line arguments manually (similar to slack-mcp approach)
-  function parseArgs() {
-    const args = process.argv.slice(2)
+  function parseArgs(argvToParse: string[]) {
+    const args = argvToParse.slice(2)
 
     type Transport = 'stdio' | 'http'
     const isSupportedTransport = (value: string | undefined): value is Transport =>
@@ -122,7 +122,7 @@ Examples:
     return { transport, port, authToken };
   }
 
-  const options = parseArgs()
+  const options = parseArgs(argv)
   const transport = options.transport
 
   if (transport === 'stdio') {
