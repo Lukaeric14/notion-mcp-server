@@ -16,8 +16,8 @@ export async function startServer(argv: string[] = process.argv) {
   const baseUrl = process.env.BASE_URL ?? undefined
 
   // Parse command line arguments manually (similar to slack-mcp approach)
-  function parseArgs(argvToParse: string[]) {
-    const args = argvToParse.slice(2)
+  function parseArgs() {
+    const args = process.argv.slice(2)
 
     type Transport = 'stdio' | 'http'
     const isSupportedTransport = (value: string | undefined): value is Transport =>
