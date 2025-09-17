@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN --mount=type=cache,target=/root/.npm npm ci --ignore-scripts --omit-dev
+RUN --mount=type=cache,target=/root/.npm npm ci --ignore-scripts
 
 # Copy source code
 COPY . .
