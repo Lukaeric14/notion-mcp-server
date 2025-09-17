@@ -287,6 +287,22 @@ curl -H "Authorization: Bearer your-token-here" \
 
 **Note:** Make sure to set either the `NOTION_TOKEN` environment variable (recommended) or the `OPENAPI_MCP_HEADERS` environment variable with your Notion integration token when using either transport mode.
 
+### Deploying to Railway
+
+You can deploy the Notion MCP server to [Railway](https://railway.app/) and expose the HTTP transport for remote clients.
+
+1. Create a new Railway service from this repository or from a GitHub fork.
+2. In the **Variables** tab, set the following values:
+   - `NOTION_TOKEN` – your Notion integration token (or `OPENAPI_MCP_HEADERS` if you prefer custom headers).
+   - `AUTH_TOKEN` – a long, random string that the HTTP transport will require as the bearer token.
+3. Configure the service:
+   - **Build command:** `npm install && npm run build`
+   - **Start command:** `npm start`
+4. Railway automatically provides the `PORT` environment variable. The server detects it, listens on that port, and defaults to the HTTP transport, so no additional configuration is required.
+5. Once deployed, use the health endpoint (`/health`) to verify the service and send MCP requests to the `/mcp` endpoint with the bearer token you configured.
+
+With this setup you can point remote MCP-compatible clients to `https://<your-railway-domain>/mcp` and authenticate requests with the value of `AUTH_TOKEN`.
+
 ### Examples
 
 1. Using the following instruction
